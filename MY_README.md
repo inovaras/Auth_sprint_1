@@ -16,9 +16,14 @@ alembic init -t async alembic &&\
 mv ./alembic ./auth_service/src/db
 ```
 #### alembic.ini
-comment sqlalchemy.url = driver://user:pass@localhost/dbname
-uncomment file_template = %%(year)d_%%(month).2d_%%(day).2d_%%(hour).2d%%(minute).2d-%%(rev)s_%%(slug)s
-меняем скрипт локации script_location = auth_service/src/db/alembic
+Закомменитровать sqlalchemy.url - для указания своего драйвера, например postgresql+asyncpg
+Раскомменитровать file_template - для указания красивого формата ревизии (миграции)
+Поменять скрипт расположения директории alembic с ./alembic на auth_service/src/db/alembic (вкусовщина)
+```ini
+#sqlalchemy.url = driver://user:pass@localhost/dbname
+file_template = %%(year)d_%%(month).2d_%%(day).2d_%%(hour).2d%%(minute).2d-%%(rev)s_%%(slug)s
+script_location = auth_service/src/db/alembic
+```
 #### alembic/env.py
 добавить перед функциями
 ```python
