@@ -17,9 +17,9 @@ services:
     container_name: postgres-auth
     env_file:
       - ./configs/.env
-    # volumes:
-    #   - theatre-db-data:/var/lib/postgresql/data
-    #   - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - ./database_ddl.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
 
@@ -27,5 +27,9 @@ services:
     image: redis:7.4.0-alpine
     container_name: redis-auth
     restart: always
-    # volumes:
-    #   - redis-auth:/data
+    volumes:
+      - redis-auth:/data
+
+volumes:
+  - postgresql-data
+  - redis-auth
