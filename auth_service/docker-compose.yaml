@@ -1,0 +1,31 @@
+services:
+  # nginx-auth-app:
+  #   image: nginx:latest
+  #   restart: always
+  #   container_name: nginx-auth-app
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./configs:/etc/nginx/conf.d:ro
+  #   ports:
+  #     - "80:80"
+    # depends_on:
+    #   - admin-app
+
+  postgres-auth:
+    image: postgres:16-alpine
+    restart: always
+    container_name: postgres-auth
+    env_file:
+      - ./configs/.env
+    # volumes:
+    #   - theatre-db-data:/var/lib/postgresql/data
+    #   - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  redis-auth:
+    image: redis:7.4.0-alpine
+    container_name: redis-auth
+    restart: always
+    # volumes:
+    #   - redis-auth:/data
