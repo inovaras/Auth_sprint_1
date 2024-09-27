@@ -17,9 +17,9 @@ services:
     container_name: postgres-auth
     env_file:
       - ./configs/.env
-    volumes:
+    # volumes:
       # - postgresql-data:/var/lib/postgresql/data
-      - ./database_ddl.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./database_ddl.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
 

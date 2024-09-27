@@ -24,6 +24,11 @@ uncomment file_template = %%(year)d_%%(month).2d_%%(day).2d_%%(hour).2d%%(minute
 ```python
 from auth_service.src.core.config import settings
 from auth_service.src.db.postgres import Base
+from auth_service.src.models import user, role # обязательно импортировать сюда новую модель после ее создания в models
 target_metadata = Base.metadata
 config.set_main_option("sqlalchemy.url",settings.POSTGRES_DSN)
 ```
+
+### alembic commands
+alembic revision --autogenerate -m "Initial migration" -создать новую ревизию (python manage.py makemigrations)
+alembic upgrade head - применить миграцию к базе данных  (python manage.py migrate)

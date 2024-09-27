@@ -5,16 +5,15 @@ from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from db.postgres import Base
+from auth_service.src.db.postgres import Base
 
 class User(Base):
-    # __tablename__ = 'users'
-    __tablename__ = 'content.users'
+    __tablename__ = 'users'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     login = Column(String(255), unique=True, nullable=False)
-    password = Column(String(500), nullable=False)
-    # first_name = Column(String(50))
+    password = Column(String(50), nullable=False)
+    first_name = Column(String(200))
     # last_name = Column(String(50))
     # created_at = Column(DateTime, default=datetime.utcnow)
 
