@@ -4,11 +4,11 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from redis.asyncio import Redis
 
-from auth_service.src.api.v1 import role, user
+from auth_service.src.api.v1 import user
 from auth_service.src.core.config import settings
 
 # from db import psycopg, redis
-from auth_service.src.db.postgres import get_pg_session
+# from auth_service.src.database.session import get_db_session
 
 
 @asynccontextmanager
@@ -38,4 +38,4 @@ app = FastAPI(
 # Подключаем роутер к серверу, указав префикс /v1/users
 # Теги указываем для удобства навигации по документации
 app.include_router(user.router, prefix="/api/v1/users", tags=["users"])
-app.include_router(role.router, prefix="/api/v1/roles", tags=["roles"])
+# app.include_router(role.router, prefix="/api/v1/roles", tags=["roles"])
