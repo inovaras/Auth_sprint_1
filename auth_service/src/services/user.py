@@ -18,7 +18,7 @@ class UserService:
         user = await self.repository.create(data.model_dump())
         return user
 
-    async def login(self, data: UserLoginDTO, user_agent: str) -> User | str:
+    async def login(self, data: UserLoginDTO, user_agent: str) -> User | str | None:
         user = await self.repository.find_by_login(data.login)
         # add to connect history
         if not user.check_password(data.password):
