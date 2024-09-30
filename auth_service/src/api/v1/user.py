@@ -40,11 +40,12 @@ async def create_user(service: UserService, data: UserCreateDTO):
 @router.post("/login", status_code=status.HTTP_200_OK, response_model=UserDTO)
 async def login(service: UserService, data: UserLoginDTO, request: Request):
     user_agent = request.headers["user-agent"]
-    user = await service.login(data, user_agent)
-    if not user:
+    response = await service.login(data, user_agent)
+    if not response:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
-
-    return user
+    if isinstance(response, str):
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=response)
+    return response
 
 # BUG не реализовано
 @router.post("/logout", status_code=status.HTTP_200_OK, response_model=UserDTO)

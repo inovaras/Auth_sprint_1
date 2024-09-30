@@ -18,9 +18,11 @@ class UserService:
         user = await self.repository.create(data.model_dump())
         return user
 
-    async def login(self, data: UserLoginDTO, user_agent: str) -> User | None:
+    async def login(self, data: UserLoginDTO, user_agent: str) -> User | str:
         user = await self.repository.find_by_login(data.login)
         # add to connect history
+        if not user.check_password(data.password):
+            return "Incorrect user or password"
         if user:
             await self.repository.add_to_history(user, user_agent)
         # TODO надо возвращать jwt
