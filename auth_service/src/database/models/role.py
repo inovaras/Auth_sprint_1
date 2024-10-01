@@ -1,16 +1,15 @@
 from enum import Enum
-from sqlalchemy import Column, String
+from sqlalchemy import Column, ForeignKey, String
 
 from auth_service.src.database.models.base import Base
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 
 class Role(Base):
     __tablename__ = 'roles'
 
     name = Column(String(255), unique=True, nullable=False)
     permissions = relationship("Permission", back_populates="role", cascade="all, delete-orphan", lazy="selectin")
-
-
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -27,11 +26,7 @@ class PermissionEnum(Enum):
 
 class Permission(Base):
 
-    allowed: PermissionEnum   #
+    # allowed: PermissionEnum
+    allowed = Column(String(255))
+    role_id = Column(UUID, ForeignKey("roles.pk"))
     role = relationship("Role", back_populates="permissions")
-
-
-
-    role = Role()
-    role.permissions.append(Permission(allowed=PermissionEnum.CREATE))
-    role.permissions.append(Permission(allowed=PermissionEnum.GET))

@@ -24,6 +24,7 @@ class DatabaseRepository(Generic[Model]):
         await self.session.refresh(instance)
         return instance
 
+
     async def get(self, pk: uuid.UUID) -> Model | None:
         return await self.session.get(self.model, pk)
 
