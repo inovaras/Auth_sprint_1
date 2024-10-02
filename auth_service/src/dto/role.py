@@ -2,11 +2,13 @@ import uuid
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import Enum
 
+from auth_service.src.database.models.role import PermissionEnum
 
 class RoleCreateDTO(BaseModel):
     name: str
-    permissions: list[str]
+    permissions: list[PermissionEnum]
 
 
 class RoleUpdateDTO(BaseModel):
@@ -16,7 +18,7 @@ class RoleUpdateDTO(BaseModel):
 
 
 class PermissionDTO(BaseModel):
-    allowed: str
+    allowed: PermissionEnum
 
 
 class RoleDTO(BaseModel):

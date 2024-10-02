@@ -12,7 +12,9 @@ class User(Base):
     login = Column(String(255), unique=True, nullable=False)
     password = Column(String(500), nullable=False)
     #INFO 1toM связь, тк M2M требует создания промежуточной таблицы прямо здесь в файле.
-    connections = relationship("UserConnection", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
+    connections = relationship("UserSessionLog", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
+    #TODO
+    # role
 
     def __init__(self, login: str, password: str) -> None:
         self.login = login
@@ -28,8 +30,7 @@ class User(Base):
     def __repr__(self) -> str:
         return f'<User {self.login}>'
 
-
-class UserConnection(Base):
+class UserSessionLog(Base):
     __tablename__ = 'connections'
 
     info = Column(String(200))

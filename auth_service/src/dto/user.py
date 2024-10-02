@@ -19,7 +19,7 @@ class UserUpdateDTO(BaseModel):
     password: Optional[str] = None
 
 
-class UserConnectionDTO(BaseModel):
+class UserSessionLogDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     info: str
@@ -34,4 +34,4 @@ class UserDTO(BaseModel):
     # TODO убрать на проде отображение пароля в апи
     password: str
 
-    connections: list[UserConnectionDTO] = []
+    connections: list[UserSessionLogDTO] = []

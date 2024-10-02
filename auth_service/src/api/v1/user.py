@@ -36,7 +36,7 @@ async def create_user(service: UserService, data: UserCreateDTO):
     user = await service.register(data)
     return user
 
-
+# TODO fastapi exception_handler for raise error password
 @router.post("/login", status_code=status.HTTP_200_OK, response_model=UserDTO)
 async def login(service: UserService, data: UserLoginDTO, request: Request):
     user_agent = request.headers["user-agent"]

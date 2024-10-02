@@ -134,5 +134,3 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /etl/movies
-
-auth_service/src/database/alembic/versions/
