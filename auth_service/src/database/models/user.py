@@ -1,9 +1,20 @@
 from sqlalchemy import Column, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from werkzeug.security import check_password_hash, generate_password_hash
+from passlib.hash import pbkdf2_sha256
+
 
 from auth_service.src.database.models.base import Base
+
+from passlib.context import CryptContext
+
+# https://security.stackexchange.com/questions/4781/do-any-security-experts-recommend-bcrypt-for-password-storage/6415#6415
+# bcrypt vs pdkdf2 == все равно. оба хороши. Цель достигнуть 350мс на хеширование функции подбором раундов.
+pwd_context = CryptContext(
+        schemes=["pbkdf2_sha256"],
+        default="pbkdf2_sha256",
+        pbkdf2_sha256__default_rounds=30000
+)
 
 
 class User(Base):
@@ -18,14 +29,18 @@ class User(Base):
 
     def __init__(self, login: str, password: str) -> None:
         self.login = login
-        self.password = generate_password_hash(password)
+        self.password = self.generate_password_hash(password)
+
+
+    def generate_password_hash(self,password:str)-> str:
+        return pwd_context.encrypt(password)
 
     def check_password(self, password: str) -> bool:
-        return check_password_hash(self.password, password)
+        return pwd_context.verify(password, self.password)
 
-    @staticmethod
-    def update_password(password: str) -> str:
-        return generate_password_hash(password)
+
+    def update_password(self, password: str) -> str:
+        return self.generate_password_hash(password)
 
     def __repr__(self) -> str:
         return f'<User {self.login}>'
