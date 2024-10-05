@@ -14,6 +14,8 @@ class Role(Base):
 
     name = Column(String(255), unique=True, nullable=False)
     permissions = relationship("Permission", back_populates="role", cascade="all, delete-orphan", lazy="selectin")
+    users = relationship("User", back_populates="role", cascade="all, delete-orphan", lazy="selectin")
+
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -24,11 +26,6 @@ class Role(Base):
 
 class PermissionEnum(str, enum.Enum):
     # TODO users:get, actors:update
-    # user_create = "user:create"
-    # user_get = "user:get"
-    # user_update = "user:update"
-    # user_delete = "user:delete"
-
     role_get_all = "role:get_all"
     role_create = "role:create"
     role_update = "role:update"
@@ -40,6 +37,5 @@ class PermissionEnum(str, enum.Enum):
 
 class Permission(Base):
     allowed = Column(Enum(PermissionEnum))
-    # allowed = Column(String(255))
     role_id = Column(UUID, ForeignKey("roles.pk"))
     role = relationship("Role", back_populates="permissions")

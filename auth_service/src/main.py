@@ -37,6 +37,6 @@ app = FastAPI(
 
 # Подключаем роутер к серверу, указав префикс /v1/users
 # Теги указываем для удобства навигации по документации
-app.include_router(user.router, prefix="/api/v1/users", tags=["users"])
-app.include_router(role.router, prefix="/api/v1/roles", tags=["roles"])
+app.include_router(user.router, prefix="/api/v1/users", )
+app.include_router(role.router, prefix="/api/v1/roles", tags=["roles","need_auth"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])

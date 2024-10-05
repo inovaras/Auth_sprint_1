@@ -34,10 +34,7 @@ class DatabaseRepository(Generic[Model]):
             dict_without_none = {}
             for key, value in data.items():
                 if data[key] is not None:
-                    if key == 'password':
-                        dict_without_none.update({key: self.model.update_password(data[key])})  # type:ignore
-                    else:
-                        dict_without_none.update({key: value})
+                    dict_without_none.update({key: value})
 
             query = update(self.model).where(self.model.pk == pk).values(**dict_without_none)
             await self.session.execute(query)

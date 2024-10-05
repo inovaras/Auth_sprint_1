@@ -37,3 +37,10 @@ config.set_main_option("sqlalchemy.url",settings.POSTGRES_DSN)
 ### alembic commands
 alembic revision --autogenerate -m "Initial migration" -создать новую ревизию (python manage.py makemigrations)
 alembic upgrade head - применить миграцию к базе данных  (python manage.py migrate)
+
+## TODO sunday
+Идея:
+1) Все роли требуют авторизации (проверить)
+2) В методе get_current_user() происходит проверка на валидность токена, user.ivalid_token - флаг который меняем вручную при смене роли, чтобы пробросить новые пермишены в ацесс-токен.
+3) Если user.ivalid_token == true, дописать обновление ацесс-токена с новыми пермишенами в get_current_user()
+4) Переписать репозиторий роли с добавлением юзера для методов, требующих юзера.

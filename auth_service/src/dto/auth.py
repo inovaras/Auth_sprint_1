@@ -5,9 +5,18 @@
 
 from pydantic import BaseModel
 
+class SuccessOut(BaseModel):
+    success: bool = True
 
-class Token(BaseModel):
+
+class ErrorOut(BaseModel):
+    type: str
+    message: str
+
+
+class TokensDTO(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 

@@ -26,7 +26,8 @@ class RoleService:
 
         return role
 
-    async def update(self, pk: uuid.UUID, data: RoleUpdateDTO):
+    # TODO add user
+    async def update(self, pk: uuid.UUID, data: RoleUpdateDTO,):
         role = await self.repository.update(pk, data.model_dump())
 
         return role

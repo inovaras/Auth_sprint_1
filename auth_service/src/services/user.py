@@ -1,12 +1,20 @@
+import uuid
 from functools import lru_cache
 from typing import Annotated
-import uuid
 
 from fastapi import Depends
 
-from auth_service.src.dto.user import UserCreateDTO, UserDTO, UserLoginDTO, UserUpdateDTO
 from auth_service.src.database.models.user import User
-from auth_service.src.database.repository.user import UserRepository, get_user_repository
+from auth_service.src.database.repository.user import (
+    UserRepository,
+    get_user_repository,
+)
+from auth_service.src.dto.user import (
+    UserCredentialsDTO,
+    UserDTO,
+    UserLoginDTO,
+    UserUpdateDTO,
+)
 
 
 class UserService:
@@ -14,29 +22,15 @@ class UserService:
     def __init__(self, repository: UserRepository) -> None:
         self.repository = repository
 
-    async def register(self, data: UserCreateDTO):
-        user = await self.repository.create(data.model_dump())
-        return user
-
-    async def login(self, data: UserLoginDTO, user_agent: str) -> User | str | None:
-        user = await self.repository.find_by_login(data.login)
-        # add to connect history
-        if not user.check_password(data.password):
-            return "Incorrect user or password"
-        if user:
-            await self.repository.add_to_history(user, user_agent)
-        # TODO надо возвращать jwt
-        return user
+    # INFO dry
+    async def change_login(self, user:User, data:UserUpdateDTO):
+        updated_model = await self.repository.partial_update(user.pk, data.model_dump())
+        return updated_model
 
     # INFO dry
-    async def change_login(self, pk: uuid.UUID, data: UserUpdateDTO):
-        result = await self.repository.partial_update(pk, data.model_dump())
-        return result
-
-    # INFO dry
-    async def change_password(self, pk: uuid.UUID, data: UserUpdateDTO):
-        result = await self.repository.partial_update(pk, data.model_dump())
-        return result
+    async def change_password(self, user:User, data:UserUpdateDTO):
+        updated_model = await self.repository.partial_update(user.pk, data.model_dump())
+        return updated_model
 
 
 @lru_cache()

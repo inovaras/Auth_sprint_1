@@ -20,8 +20,9 @@ class RoleRepository(DatabaseRepository):
 
     async def get_all(self) -> Role | None:
         query = select(self.model).limit(100)
-        rows = await self.session.execute(query)
-        return rows.scalar_one_or_none()
+        # rows = await self.session.execute(query)
+        rows = list(await self.session.scalars(query))
+        return rows
 
     async def create(self, data: dict) -> Role:
         permissions = data.pop('permissions')
