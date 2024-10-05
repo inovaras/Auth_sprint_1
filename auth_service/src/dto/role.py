@@ -9,6 +9,7 @@ from auth_service.src.database.models.role import PermissionEnum
 class RoleCreateDTO(BaseModel):
     name: str
     permissions: list[PermissionEnum]
+    # permissions: list[str]
 
 
 class RoleUpdateDTO(BaseModel):
@@ -19,6 +20,7 @@ class RoleUpdateDTO(BaseModel):
 
 class PermissionDTO(BaseModel):
     allowed: PermissionEnum
+    # allowed: str
 
 
 class RoleDTO(BaseModel):
@@ -27,3 +29,9 @@ class RoleDTO(BaseModel):
     pk: uuid.UUID
     name: str
     permissions: list[PermissionDTO] = []
+
+
+# class UserRoleDTO(BaseModel):
+
+#     pk: uuid.UUID
+#     #как сюда добавить модель юзера

@@ -24,10 +24,10 @@ class Role(Base):
 
 class PermissionEnum(str, enum.Enum):
     # TODO users:get, actors:update
-    user_create = "user:create"
-    user_get = "user:get"
-    user_update = "user:update"
-    user_delete = "user:delete"
+    # user_create = "user:create"
+    # user_get = "user:get"
+    # user_update = "user:update"
+    # user_delete = "user:delete"
 
     role_get_all = "role:get_all"
     role_create = "role:create"

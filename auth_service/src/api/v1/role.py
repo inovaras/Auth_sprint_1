@@ -1,4 +1,3 @@
-from http import HTTPStatus
 import uuid
 from typing import Annotated
 
@@ -20,8 +19,8 @@ RoleService = Annotated[role_service, Depends(get_role_service)]
 # TODO права доступа к эндпоинтам
 # TODO создание админа на пустой системе через консоль
 @router.get("/get-all", status_code=status.HTTP_200_OK, response_model=RoleDTO)
-async def get_all(service: RoleService, pk: uuid.UUID, data: RoleUpdateDTO):
-    role = await service.update(pk, data)
+async def get_all(service: RoleService):
+    role = await service.get_all()
     return role
 
 @router.post("/create", status_code=status.HTTP_201_CREATED, response_model=RoleDTO)
@@ -36,23 +35,26 @@ async def update_role(service: RoleService, pk: uuid.UUID, data: RoleUpdateDTO):
     return role
 
 
-@router.delete("/delete", status_code=status.HTTP_200_OK, response_model=RoleDTO)
-async def delete_role(service: RoleService, pk: uuid.UUID, data: RoleUpdateDTO):
-    role = await service.update(pk, data)
-    return role
+@router.delete("/delete",
+    responses={
+        status.HTTP_200_OK:{},
+        status.HTTP_404_NOT_FOUND: {},
+    } )
+async def delete_role(service: RoleService, pk: uuid.UUID):
+    return await service.delete(pk)
 
 # update user added role field
-@router.patch("/set-role", status_code=status.HTTP_200_OK, response_model=RoleDTO)
+@router.patch("/set-role-for-user", status_code=status.HTTP_200_OK, response_model=RoleDTO)
 async def set_role(service: RoleService, pk: uuid.UUID, data: RoleUpdateDTO):
     role = await service.update(pk, data)
     return role
 
 @router.patch("/change-role-for-user", status_code=status.HTTP_200_OK, response_model=RoleDTO)
 async def change_role_for_user(service: RoleService, pk: uuid.UUID, data: RoleUpdateDTO):
-    role = await service.update(pk, data)
+    role = await service.change_role_for_user(pk, data)
     return role
 
 @router.get("/check-user-permissions", status_code=status.HTTP_200_OK, response_model=RoleDTO)
 async def check_user_permissions(service: RoleService, pk: uuid.UUID, data: RoleUpdateDTO):
-    role = await service.update(pk, data)
+    role = await service.check_user_permissions(pk, data)
     return role
