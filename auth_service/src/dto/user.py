@@ -34,4 +34,4 @@ class UserDTO(BaseModel):
     # TODO убрать на проде отображение пароля в апи
     password: str
 
-    connections: list[UserSessionLogDTO] = []
+    sessions: list[UserSessionLogDTO] = []

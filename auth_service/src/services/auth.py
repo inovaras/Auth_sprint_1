@@ -1,13 +1,15 @@
 import uuid
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, List
 
 import jwt
 from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 
+from auth_service.src.core.config import settings
+from auth_service.src.database.models.role import Role
 from auth_service.src.database.models.user import User
 from auth_service.src.database.repository.user import (
     UserRepository,
@@ -15,14 +17,10 @@ from auth_service.src.database.repository.user import (
 )
 from auth_service.src.dto.auth import TokensDTO
 from auth_service.src.dto.user import UserCredentialsDTO, UserUpdateDTO
-from auth_service.src.security.JWTAuth import JWTAuth, get_jwt_auth, get_token
+from auth_service.src.security.JWTAuth import JWTAuth, JWTError, get_jwt_auth, get_token
 
 # to get a string like this run:
 # openssl rand -hex 32
-
-
-class JWTError(Exception):
-    pass
 
 
 # https://habr.com/ru/companies/doubletapp/articles/764424/
@@ -38,7 +36,6 @@ class AuthService:
         self,
         repository: UserRepository,
         jwt_auth: JWTAuth,
-        # token: str,
         request: Request,
         response: Response,
     ) -> None:
@@ -46,7 +43,6 @@ class AuthService:
         self._jwt_auth = jwt_auth
         self.request = request
         self.response = response
-        # self.token = token
 
     @classmethod
     def verify_password(cls, plain_password, hashed_password):
@@ -84,11 +80,17 @@ class AuthService:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Incorrect login or password')
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='User blocked')
+        if user.role:
+            print()
+            permissions: List[str] = [permission.allowed for permission in user.role.permissions]
+            # INFO add refresh_token in postgres  +
+            access_token, refresh_token = await self._issue_tokens_for_user(user=user, permissions=permissions)
+        else:
+            access_token, refresh_token = await self._issue_tokens_for_user(user=user, permissions=[])
 
-        access_token, refresh_token = await self._issue_tokens_for_user(user=user)
-        # TODO add refresh_token in postgres  +
         self.response.set_cookie(key="user_access_token", value=access_token, httponly=True)
         self.response.set_cookie(key="user_refresh_token", value=refresh_token, httponly=True)
+        await self.repository.add_to_history(user, self.request.headers['user-agent'])
 
         return TokensDTO(access_token=access_token, refresh_token=refresh_token, token_type='bearer'), None
 
@@ -100,11 +102,23 @@ class AuthService:
         self.response.delete_cookie(key="user_refresh_token", httponly=True)
         return {'message': 'Пользователь успешно вышел из системы'}
 
-    # async def get_current_user(self,token = Depends(get_token)):
-    async def get_current_user(self, token: Annotated[str, Depends(get_token)]):
+    async def _update_tokens_after_change_role_or_permission(self, user: User):
+        """Автоматический проброс permissions в access_token, refresh_token
+        пользователя после обновления его прав без необходимости re-login пользователя
+
+        invalid_token устанавливается в true после обновления роли или permission.
+        """
+        perms_allowed = [permission.allowed for permission in user.role.permissions]
+        access_token, refresh_token = await self._issue_tokens_for_user(user=user, permissions=perms_allowed)
+        self.response.set_cookie(key="user_access_token", value=access_token, httponly=True)
+        self.response.set_cookie(key="user_refresh_token", value=refresh_token, httponly=True)
+        await self.repository.partial_update(pk=user.pk, data={"invalid_token": False})
+
+    # FIXME rename здесь не только декодирование токена, но и проверка на наличие необходимых атрибутов.
+    async def decode_token(self, token: str):
         try:
             payload = jwt.decode(token, self._jwt_auth._config.secret, algorithms=[self._jwt_auth._config.algorithm])
-        except JWTError:
+        except (JWTError, jwt.ExpiredSignatureError):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Токен не валидный!')
 
         expire = payload.get('exp')
@@ -112,24 +126,35 @@ class AuthService:
         if (not expire) or (expire_time < datetime.now(timezone.utc)):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Токен истек')
 
-        # user_id = payload.get('sub')
         login = payload.get('sub')
         if not login:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail='Пользователь с таким логином не найден'
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Токен не содержит логин пользователя')
+        return payload
 
-        user = await self.repository.find_by_login(login)
+    async def get_endpoint_access(self, request_endpoint: str, token: str):
+        # in DB
+        # permissions: List[str] = [permission.allowed for permission in user.role.permissions]
+        # in CPU
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        if request_endpoint in payload["permissions"]:
+            return True
+
+        return False
+
+    async def get_current_user_if_has_permissions(self, token: Annotated[str, Depends(get_token)]):
+        # TODO add decode result in Redis??
+        payload = await self.decode_token(token)
+
+        # запрошенный эндпоинт разрешен для использования владельцем токена.
+        if not self.request.url.path in payload["permissions"]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Недостаточно прав')
+
+        user = await self.repository.find_by_login(payload['sub'])
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='User not found')
-        # INFO инвалид_токен указывает на необходимость перелогиниться. например после установки роли с пермишенами.
-        if user.invalid_token:
-            # TODO сделать роль, проверить проброс пермишенов в токены
-            permissions = user.role.permissions
-            access_token, refresh_token = await self._issue_tokens_for_user(user=user, permissions=permissions)
-            self.response.set_cookie(key="user_access_token", value=access_token, httponly=True)
-            self.response.set_cookie(key="user_refresh_token", value=refresh_token, httponly=True)
-            # raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Обновлены права, нужно залогиниться')
+
+        if user.invalid_token:  # type: ignore
+            await self._update_tokens_after_change_role_or_permission(user)
 
         return user
 
@@ -153,6 +178,9 @@ class AuthService:
         self.response.set_cookie(key="user_access_token", value=access_token, httponly=True)
         self.response.set_cookie(key="user_refresh_token", value=refresh_token, httponly=True)
         return updated_model
+
+    async def invalidate_tokens(self, role: Role):
+        await self.repository.invalidate_tokens(role)
 
 
 @lru_cache()

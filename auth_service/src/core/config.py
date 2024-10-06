@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,7 +14,10 @@ class Settings(BaseSettings):
     # Название проекта
     PROJECT_NAME: str
     POSTGRES_DSN: str
-
+    JWT_SECRET_KEY:str
+    JWT_ALGORITHM:str
+    ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(minutes=30)
+    REFRESH_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(minutes=60 * 24 * 7)
 
 # Инициализация настроек
 

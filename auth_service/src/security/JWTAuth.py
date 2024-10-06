@@ -8,12 +8,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
+from auth_service.src.core.config import settings
 
-# TODO move to settings
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = timedelta(minutes=30)
-REFRESH_TOKEN_EXPIRE_MINUTES = timedelta(minutes=60 * 24 * 7)
+
+class JWTError(Exception):
+    pass
 
 
 async def get_token(request: Request):
@@ -21,16 +20,17 @@ async def get_token(request: Request):
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token not found')
     # TODO check token in redis
-    # if token in redis - Raise error == nevalid token
+    # if token in redis - Raise error  invalid token
 
     return token
 
+
 @dataclass
 class JWTConfig:
-    secret: str = SECRET_KEY
-    algorithm: str = ALGORITHM
-    access_token_ttl: timedelta = ACCESS_TOKEN_EXPIRE_MINUTES
-    refresh_token_ttl: timedelta = REFRESH_TOKEN_EXPIRE_MINUTES
+    secret: str = settings.JWT_SECRET_KEY
+    algorithm: str = settings.JWT_ALGORITHM
+    access_token_ttl: timedelta = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    refresh_token_ttl: timedelta = settings.REFRESH_TOKEN_EXPIRE_MINUTES
 
 
 class TokenType(str, Enum):

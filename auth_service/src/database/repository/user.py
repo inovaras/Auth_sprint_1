@@ -6,6 +6,7 @@ from fastapi import Depends
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth_service.src.database.models.role import Role
 from auth_service.src.database.models.user import Token, User, UserSessionLog
 from auth_service.src.database.repository.base import DatabaseRepository
 from auth_service.src.database.session import get_db_session
@@ -47,6 +48,17 @@ class UserRepository(DatabaseRepository):
         self.session.add(token)
         await self.session.commit()
         await self.session.refresh(user)
+
+
+    async def invalidate_tokens(self, role:Role) -> None:
+        query = select(User).where(User.role == role)
+        users = list(await self.session.scalars(query))
+        if users:
+            for user in users:
+                user.invalid_token = True
+                self.session.add(user)
+        await self.session.commit()
+        print()
 
 def get_user_repository(
     model: type[User],

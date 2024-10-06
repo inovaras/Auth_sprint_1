@@ -12,6 +12,7 @@ from passlib.context import CryptContext
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], default="pbkdf2_sha256", pbkdf2_sha256__default_rounds=30000)
 
 
+# OneToMany
 class User(Base):
     __tablename__ = 'users'
 
@@ -24,7 +25,7 @@ class User(Base):
     tokens = relationship("Token", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
 
     role_id = Column(UUID, ForeignKey("roles.pk"))
-    role = relationship("Role", back_populates="users")
+    role = relationship("Role", back_populates="users", lazy="selectin")
 
 
     def __init__(self, login: str, password: str) -> None:
@@ -40,7 +41,7 @@ class UserSessionLog(Base):
 
     info = Column(String(200))
     user_id = Column(UUID, ForeignKey("users.pk"))
-    user = relationship("User", back_populates="sessions")
+    user = relationship("User", back_populates="sessions", lazy="selectin")
 
 
 class Token(Base):
@@ -48,4 +49,4 @@ class Token(Base):
 
     refresh_token = Column(Text)
     user_id = Column(UUID, ForeignKey("users.pk"))
-    user = relationship("User", back_populates="tokens")
+    user = relationship("User", back_populates="tokens", lazy="selectin")

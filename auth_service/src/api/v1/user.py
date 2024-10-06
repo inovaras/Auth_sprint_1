@@ -32,15 +32,16 @@ UserService = Annotated[user_service, Depends(get_user_service)]
 - получение пользователем своей истории входов в аккаунт; - logging in db  /gethistory ==db
 """
 
+
 @router.patch("/change-login", status_code=status.HTTP_200_OK, response_model=None, tags=['need_auth'])
 async def change_login(
     data: UserUpdateDTO,
     token: Annotated[str, Depends(get_token)],
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ):
-    user = await auth_service.get_current_user(token)
+    user = await auth_service.get_current_user_if_has_permissions(token)
     updated_user = await auth_service.change_login(user, data)
-    return {"updated_login":updated_user.login}
+    return {"updated_login": updated_user.login}
 
 
 @router.patch("/change-password", status_code=status.HTTP_200_OK, response_model=None, tags=['need_auth'])
@@ -49,6 +50,6 @@ async def change_password(
     token: Annotated[str, Depends(get_token)],
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
 ):
-    user = await auth_service.get_current_user(token)
+    user = await auth_service.get_current_user_if_has_permissions(token)
     await auth_service.change_password(user, data)
-    return {"updated_password":True}
+    return {"updated_password": True}
