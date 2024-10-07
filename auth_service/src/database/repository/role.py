@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Callable
 from typing import List
 
-from fastapi import Depends, status
+from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,37 +36,36 @@ class RoleRepository(DatabaseRepository):
     async def update(self, pk: uuid.UUID, data: dict) -> Role | None:
         role_db = await self.get(pk)
         if not role_db:
-            return "Such pk does not exist"
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Role not exists')
 
         if data["name"] != role_db.name:
             role_db.name = data["name"]
             await self.session.commit()
             await self.session.refresh(role_db)
 
-        if data["permissions"]:
+        # if data["permissions"]:
 
-            for value in role_db.permissions:
-                if value.allowed not in data["permissions"]:
-                    result = await self.session.execute(
-                        select(Permission).where(Permission.allowed == value.allowed, Permission.role_id == pk)
-                    )
-                    permission_to_delete = result.first()
+        #     for value in role_db.permissions:
+        #         if value.allowed not in data["permissions"]:
+        #             result = await self.session.execute(
+        #                 select(Permission).where(Permission.allowed == value.allowed, Permission.role_id == pk)
+        #             )
+        #             permission_to_delete = result.first()
 
-                    if permission_to_delete:
-                        await self.session.delete(permission_to_delete[0])
-                        await self.session.commit()
-                        print("удален:", value.allowed)
+        #             if permission_to_delete:
+        #                 await self.session.delete(permission_to_delete[0])
+        #                 await self.session.commit()
+        #                 print("удален:", value.allowed)
 
-                else:
-                    print("остался", value.allowed)
-                    data["permissions"].remove(value.allowed)
+        #         else:
+        #             print("остался", value.allowed)
+        #             data["permissions"].remove(value.allowed)
 
-            for permission in data["permissions"]:
-                self.session.add(Permission(allowed=permission, role_id=pk))
-                print("добавлен:", permission)
-            await self.session.commit()
-            await self.session.refresh(role_db)
-
+        #     for permission in data["permissions"]:
+        #         self.session.add(Permission(allowed=permission, role_id=pk))
+        #         print("добавлен:", permission)
+        #     await self.session.commit()
+        #     await self.session.refresh(role_db)
         return role_db
 
     async def delete(self, pk: uuid.UUID) -> int:
