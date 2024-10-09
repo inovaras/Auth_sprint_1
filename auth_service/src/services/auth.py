@@ -16,7 +16,7 @@ from auth_service.src.database.repository.user import (
     get_user_repository,
 )
 from auth_service.src.dto.auth import TokensDTO
-from auth_service.src.dto.user import UserCredentialsDTO, UserUpdateDTO
+from auth_service.src.dto.user import UserCredentialsDTO, UserCredentialsDTO_v2, UserUpdateDTO
 from auth_service.src.security.JWTAuth import JWTAuth, JWTError, get_jwt_auth, get_token
 
 # to get a string like this run:
@@ -64,15 +64,17 @@ class AuthService:
         return access_token, refresh_token
 
     # INFO ok
-    async def register(self, body: UserCredentialsDTO) -> tuple[int, None] | tuple[None, str]:
+    async def register(self, body: UserCredentialsDTO|UserCredentialsDTO_v2) -> User:
         if await self.repository.find_by_login(body.login):
-            return None, "user already exists"
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='User blocked')
 
         body.password = self.get_password_hash(body.password)
-        user = await self.repository.create(body.model_dump())
-        await self.repository.partial_update(pk=user.pk, data={'is_active': True})
 
-        return status.HTTP_201_CREATED, None
+        user = await self.repository.create(body.model_dump())
+        if isinstance(body, UserCredentialsDTO):
+            await self.repository.partial_update(pk=user.pk, data={'is_active': True})
+
+        return user
 
     async def login(self, body: OAuth2PasswordRequestForm) -> tuple[TokensDTO, None] | tuple[None, str]:
         user = await self.repository.find_by_login(body.username)

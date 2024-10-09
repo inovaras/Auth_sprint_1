@@ -14,10 +14,13 @@ class Settings(BaseSettings):
     # Название проекта
     PROJECT_NAME: str
     POSTGRES_DSN: str
-    JWT_SECRET_KEY:str
-    JWT_ALGORITHM:str
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(minutes=30)
     REFRESH_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(minutes=60 * 24 * 7)
+    ADMIN_PASSWORD: str
+    ADMIN_LOGIN: str
+
 
 # Инициализация настроек
 

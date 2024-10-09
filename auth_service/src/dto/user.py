@@ -9,6 +9,11 @@ class UserCredentialsDTO(BaseModel):
     password: str
 
 
+class UserCredentialsDTO_v2(BaseModel):
+    login: str
+    password: str
+    is_active: bool = True
+
 class UserLoginDTO(BaseModel):
     login: str
     password: str

@@ -43,29 +43,6 @@ class RoleRepository(DatabaseRepository):
             await self.session.commit()
             await self.session.refresh(role_db)
 
-        # if data["permissions"]:
-
-        #     for value in role_db.permissions:
-        #         if value.allowed not in data["permissions"]:
-        #             result = await self.session.execute(
-        #                 select(Permission).where(Permission.allowed == value.allowed, Permission.role_id == pk)
-        #             )
-        #             permission_to_delete = result.first()
-
-        #             if permission_to_delete:
-        #                 await self.session.delete(permission_to_delete[0])
-        #                 await self.session.commit()
-        #                 print("удален:", value.allowed)
-
-        #         else:
-        #             print("остался", value.allowed)
-        #             data["permissions"].remove(value.allowed)
-
-        #     for permission in data["permissions"]:
-        #         self.session.add(Permission(allowed=permission, role_id=pk))
-        #         print("добавлен:", permission)
-        #     await self.session.commit()
-        #     await self.session.refresh(role_db)
         return role_db
 
     async def delete(self, pk: uuid.UUID) -> int:
