@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(minutes=60 * 24 * 7)
     ADMIN_PASSWORD: str
     ADMIN_LOGIN: str
-
+    REDIS_HOST: str
+    REDIS_PORT: int
 
 # Инициализация настроек
 

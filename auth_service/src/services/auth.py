@@ -8,6 +8,7 @@ from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 
+from auth_service.src.cache.cache import Cache, get_cache_storage
 from auth_service.src.core.config import settings
 from auth_service.src.database.models.role import Role
 from auth_service.src.database.models.user import User
@@ -38,11 +39,13 @@ class AuthService:
         jwt_auth: JWTAuth,
         request: Request,
         response: Response,
+        cache: Cache
     ) -> None:
         self.repository = repository
         self._jwt_auth = jwt_auth
         self.request = request
         self.response = response
+        self.cache = cache
 
     @classmethod
     def verify_password(cls, plain_password, hashed_password):
@@ -83,7 +86,6 @@ class AuthService:
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='User blocked')
         if user.role:
-            print()
             permissions: List[str] = [permission.allowed for permission in user.role.permissions]
             # INFO add refresh_token in postgres  +
             access_token, refresh_token = await self._issue_tokens_for_user(user=user, permissions=permissions)
@@ -99,9 +101,10 @@ class AuthService:
     async def logout(self):
         # TODO add access_token in redis
         # TODO remove refresh_token to postgres ??
-        print()
         self.response.delete_cookie(key="user_access_token", httponly=True)
         self.response.delete_cookie(key="user_refresh_token", httponly=True)
+        await self.cache.set_cache(self.request.cookies['user_access_token'] , self.request.cookies['user_access_token'] )
+
         return {'message': 'Пользователь успешно вышел из системы'}
 
     async def _update_tokens_after_change_role_or_permission(self, user: User):
@@ -144,6 +147,9 @@ class AuthService:
         return False
 
     async def get_current_user_if_has_permissions(self, token: Annotated[str, Depends(get_token)]):
+        has_token = await self.cache.get_cache(key=token)
+        if has_token:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Токен в черном списке')
         # TODO add decode result in Redis??
         payload = await self.decode_token(token)
 
@@ -191,10 +197,12 @@ def get_auth_service(
     jwt_auth: Annotated[JWTAuth, Depends(get_jwt_auth)],
     request: Request,
     response: Response,
+    cache: Cache = Depends(get_cache_storage)
 ) -> AuthService:
     return AuthService(
         repository=repository,
         jwt_auth=jwt_auth,
         request=request,
         response=response,
+        cache=cache
     )

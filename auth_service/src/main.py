@@ -1,3 +1,5 @@
+from logging import getLogger
+import logging
 from fastapi import FastAPI, Request, Response
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import ORJSONResponse
@@ -6,7 +8,9 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth_service.src.api.v1 import auth, role, user
+from auth_service.src.cache.cache import Cache, get_cache_storage
 from auth_service.src.core.config import settings
+from auth_service.src.database import redis
 from auth_service.src.database.models.role import Permission, Role
 from auth_service.src.database.models.user import User
 from auth_service.src.database.repository.role import RoleRepository
@@ -16,6 +20,10 @@ from auth_service.src.dto.user import UserCredentialsDTO
 from auth_service.src.security.JWTAuth import JWTAuth, JWTConfig
 from auth_service.src.services.auth import AuthService
 from auth_service.src.services.role import RoleService
+
+logging.basicConfig(level=logging.INFO)
+logger = getLogger(__name__)
+
 
 
 async def add_permissions_in_db(_: FastAPI, session: AsyncSession):
@@ -38,10 +46,11 @@ async def add_permissions_in_db(_: FastAPI, session: AsyncSession):
 
 async def create_basic_roles_and_users(session: AsyncSession):
     jwt_auth = JWTAuth(config=JWTConfig())
+    cache = await get_cache_storage()
     role_repository = RoleRepository(model=Role, session=session)
     auth_repository = UserRepository(model=User, session=session)
     role_service = RoleService(repository=role_repository, request=Request, response=Response)
-    auth_service = AuthService(repository=auth_repository, request=Request, response=Response, jwt_auth=jwt_auth)
+    auth_service = AuthService(repository=auth_repository, request=Request, response=Response, jwt_auth=jwt_auth, cache=cache)
 
     # create admin
     admin_creds = UserCredentialsDTO(login=settings.ADMIN_LOGIN, password=settings.ADMIN_PASSWORD)
@@ -76,17 +85,17 @@ async def create_basic_roles_and_users(session: AsyncSession):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # TODO наличие соединения не проверяется
-    # redis.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+    redis.redis = Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+    logger.info("redis connection successfull")
     async with get_db_session_for_main() as session:
         # Добавляем права в базу данных
         await add_permissions_in_db(app, session)
-        print("permissions added successfully")
+        logger.info("permissions added successfully")
         await create_basic_roles_and_users(session)
-        print("Created basic roles and users")
-    print("redis connection successful")
+        logger.info("Created basic roles and users")
     yield
-    # await redis.redis.close()
-    print("redis disconnection successful")
+    await redis.redis.close()
+    logger.info("redis disconnection successfull")
 
 
 app = FastAPI(

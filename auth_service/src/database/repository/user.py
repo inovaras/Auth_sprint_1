@@ -58,7 +58,6 @@ class UserRepository(DatabaseRepository):
                 user.invalid_token = True
                 self.session.add(user)
         await self.session.commit()
-        print()
 
 def get_user_repository(
     model: type[User],
