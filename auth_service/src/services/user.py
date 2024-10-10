@@ -1,4 +1,3 @@
-import uuid
 from functools import lru_cache
 from typing import Annotated
 
@@ -9,12 +8,7 @@ from auth_service.src.database.repository.user import (
     UserRepository,
     get_user_repository,
 )
-from auth_service.src.dto.user import (
-    UserCredentialsDTO,
-    UserDTO,
-    UserLoginDTO,
-    UserUpdateDTO,
-)
+from auth_service.src.dto.user import UserUpdateDTO
 
 
 class UserService:
@@ -23,12 +17,12 @@ class UserService:
         self.repository = repository
 
     # INFO dry
-    async def change_login(self, user:User, data:UserUpdateDTO):
+    async def change_login(self, user: User, data: UserUpdateDTO):
         updated_model = await self.repository.partial_update(user.pk, data.model_dump())
         return updated_model
 
     # INFO dry
-    async def change_password(self, user:User, data:UserUpdateDTO):
+    async def change_password(self, user: User, data: UserUpdateDTO):
         updated_model = await self.repository.partial_update(user.pk, data.model_dump())
         return updated_model
 

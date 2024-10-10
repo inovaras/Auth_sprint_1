@@ -68,8 +68,10 @@
 5) Микросервисы должны дергать эндпоинт "/check-user-permissions" для проверки прав пользователя.
 
 ### Установка запрета на эндпоинт (двухэтапная проверка прав на эндпоинт (не путать с двухфакторной авторизацией))
+В аргументы ф-ии надо добавить token для проверки наличия токена.
+auth_service - для проверки прав пользователя
 ```python
-@router.patch("/change-password", status_code=status.HTTP_200_OK, response_model=None, tags=['need_auth'])
+@router.patch("/change-password", status_code=status.HTTP_200_OK, response_model=None)
 async def change_password(
     data: UserUpdateDTO,
     token: Annotated[str, Depends(get_token)],  #проверка на наличие токена.

@@ -13,10 +13,11 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with factory() as session:
         try:
             yield session
-            await session.commit() #INFO обудмать его наличие здесь, ведь он используется вручную в repository
+            await session.commit()  # INFO обудмать его наличие здесь, ведь он используется вручную в repository
         except exc.SQLAlchemyError:
             await session.rollback()
             raise
+
 
 @asynccontextmanager
 async def get_db_session_for_main() -> AsyncGenerator[AsyncSession, None]:

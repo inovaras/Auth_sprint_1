@@ -1,13 +1,13 @@
-
-
-from functools import lru_cache
 import uuid
-from fastapi import HTTPException, Request, status
-import jwt
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
+from functools import lru_cache
 from typing import Any
+
+import jwt
+from fastapi import HTTPException, Request, status
+
 from auth_service.src.core.config import settings
 
 
@@ -19,8 +19,6 @@ async def get_token(request: Request):
     token = request.cookies.get('user_access_token')
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token not found')
-    # TODO check token in redis
-    # if token in redis - Raise error  invalid token
 
     return token
 
@@ -37,11 +35,12 @@ class TokenType(str, Enum):
     ACCESS = 'ACCESS'
     REFRESH = 'REFRESH'
 
+# https://habr.com/ru/companies/doubletapp/articles/764424/
+# https://github.com/doubletapp/habr-jwt-auth-example/blob/main/src/app/pkg/auth/middlewares/jwt/base/auth.py#L50
 class JWTAuth:
 
     def __init__(self, config: JWTConfig):
         self._config = config
-
 
     def generate_unlimited_access_token(self, subject: str, payload: dict[str, Any] = {}) -> str:
         return self.__sign_token(type=TokenType.ACCESS.value, subject=subject, payload=payload)
@@ -108,6 +107,5 @@ class JWTAuth:
 
 
 @lru_cache()
-def get_jwt_auth(
-) -> JWTAuth:
+def get_jwt_auth() -> JWTAuth:
     return JWTAuth(JWTConfig())

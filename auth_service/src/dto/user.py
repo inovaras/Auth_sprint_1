@@ -14,6 +14,7 @@ class UserCredentialsDTO_v2(BaseModel):
     password: str
     is_active: bool = True
 
+
 class UserLoginDTO(BaseModel):
     login: str
     password: str
@@ -28,7 +29,6 @@ class UserSessionLogDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     info: str
-    # user_id: uuid.UUID
 
 
 class UserDTO(BaseModel):
@@ -37,6 +37,6 @@ class UserDTO(BaseModel):
     pk: uuid.UUID
     login: str
     # TODO убрать на проде отображение пароля в апи
-    password: str
+    # password: str
 
     sessions: list[UserSessionLogDTO] = []

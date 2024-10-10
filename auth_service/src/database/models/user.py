@@ -1,15 +1,8 @@
 from sqlalchemy import Boolean, Column, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from passlib.hash import pbkdf2_sha256
-
 
 from auth_service.src.database.models.base import Base
-
-from passlib.context import CryptContext
-
-
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], default="pbkdf2_sha256", pbkdf2_sha256__default_rounds=30000)
 
 
 # OneToMany
@@ -26,7 +19,6 @@ class User(Base):
 
     role_id = Column(UUID, ForeignKey("roles.pk"))
     role = relationship("Role", back_populates="users", lazy="selectin")
-
 
     def __init__(self, login: str, password: str) -> None:
         self.login = login

@@ -1,9 +1,5 @@
-
-
-
-
-
 from pydantic import BaseModel
+
 
 class SuccessOut(BaseModel):
     success: bool = True

@@ -1,5 +1,6 @@
-from logging import getLogger
 import logging
+from logging import getLogger
+
 from fastapi import FastAPI, Request, Response
 from fastapi.concurrency import asynccontextmanager
 from fastapi.responses import ORJSONResponse
@@ -23,7 +24,6 @@ from auth_service.src.services.role import RoleService
 
 logging.basicConfig(level=logging.INFO)
 logger = getLogger(__name__)
-
 
 
 async def add_permissions_in_db(_: FastAPI, session: AsyncSession):
@@ -50,7 +50,9 @@ async def create_basic_roles_and_users(session: AsyncSession):
     role_repository = RoleRepository(model=Role, session=session)
     auth_repository = UserRepository(model=User, session=session)
     role_service = RoleService(repository=role_repository, request=Request, response=Response)
-    auth_service = AuthService(repository=auth_repository, request=Request, response=Response, jwt_auth=jwt_auth, cache=cache)
+    auth_service = AuthService(
+        repository=auth_repository, request=Request, response=Response, jwt_auth=jwt_auth, cache=cache
+    )
 
     # create admin
     admin_creds = UserCredentialsDTO(login=settings.ADMIN_LOGIN, password=settings.ADMIN_PASSWORD)
@@ -113,9 +115,6 @@ app = FastAPI(
 
 # Подключаем роутер к серверу, указав префикс /v1/users
 # Теги указываем для удобства навигации по документации
-app.include_router(
-    user.router,
-    prefix="/api/v1/users",
-)
-app.include_router(role.router, prefix="/api/v1/roles", tags=["roles", "need_auth"])
+app.include_router(user.router, prefix="/api/v1/users")
+app.include_router(role.router, prefix="/api/v1/roles", tags=["roles"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])

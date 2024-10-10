@@ -24,8 +24,6 @@ from auth_service.src.security.JWTAuth import JWTAuth, JWTError, get_jwt_auth, g
 # openssl rand -hex 32
 
 
-# https://habr.com/ru/companies/doubletapp/articles/764424/
-# https://github.com/doubletapp/habr-jwt-auth-example/blob/main/src/app/pkg/auth/middlewares/jwt/base/auth.py#L50
 class AuthService:
     # https://security.stackexchange.com/questions/4781/do-any-security-experts-recommend-bcrypt-for-password-storage/6415#6415
     # bcrypt vs pdkdf2 == все равно. оба хороши. Цель достигнуть 350мс на хеширование функции подбором раундов.
@@ -69,7 +67,7 @@ class AuthService:
     # INFO ok
     async def register(self, body: UserCredentialsDTO|UserCredentialsDTO_v2) -> User:
         if await self.repository.find_by_login(body.login):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='User blocked')
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Нельзя создать пользователя с такими параметрами')
 
         body.password = self.get_password_hash(body.password)
 
@@ -99,11 +97,10 @@ class AuthService:
         return TokensDTO(access_token=access_token, refresh_token=refresh_token, token_type='bearer'), None
 
     async def logout(self):
-        # TODO add access_token in redis
         # TODO remove refresh_token to postgres ??
         self.response.delete_cookie(key="user_access_token", httponly=True)
         self.response.delete_cookie(key="user_refresh_token", httponly=True)
-        await self.cache.set_cache(self.request.cookies['user_access_token'] , self.request.cookies['user_access_token'] )
+        await self.cache.set_cache(key=self.request.cookies['user_access_token'] , value=self.request.cookies['user_access_token'], expire=settings.ACCESS_TOKEN_EXPIRE_MINUTES.seconds )
 
         return {'message': 'Пользователь успешно вышел из системы'}
 

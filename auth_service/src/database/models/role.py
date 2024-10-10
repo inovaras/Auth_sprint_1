@@ -1,4 +1,4 @@
-from sqlalchemy import UUID, Column, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import UUID, Column, ForeignKey, String, Table, Text
 from sqlalchemy.orm import relationship
 
 from auth_service.src.database.models.base import Base

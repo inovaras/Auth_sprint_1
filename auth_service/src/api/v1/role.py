@@ -95,24 +95,15 @@ async def set_role_for_user(
     return role
 
 
-# TODO в нашей системе разрешена только 1 роль на юзера. Этот эндпоинт имеет смысл в системе где разрешено
+# INFO в нашей системе разрешена только 1 роль на юзера. Этот эндпоинт имеет смысл в системе где разрешено
 # несколько ролей на пользователя
 @router.patch("/remove-role-for-user", status_code=status.HTTP_200_OK, response_model=RoleDTO)
-async def remove_role_for_user(
-    service: RoleService,
-    # role_pk: uuid.UUID,
-    # login: str,
-    token: Annotated[str, Depends(get_token)],
-    auth_service: Annotated[AuthService, Depends(get_auth_service)],
-):
+async def remove_role_for_user():
     raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
-    # user = await auth_service.get_current_user(token)
-    # role = await service.set_role_for_user(role_pk, login)
-    # return role
 
 
 # CHECK доделать или проверить при интеграции сервисов
-@router.get("/check-user-permissions", status_code=status.HTTP_200_OK, response_model=None)
+@router.get("/check-user-permissions", status_code=status.HTTP_200_OK, response_model=None, tags=["permissions"])
 async def check_user_permissions(
     request: Request,
     request_endpoint: str,  # role/get-all
@@ -124,8 +115,7 @@ async def check_user_permissions(
     return is_allowed
 
 
-# TODO admin or manager
-@router.get("/create-permissions", status_code=status.HTTP_200_OK, response_model=None)
+@router.get("/create-permissions", status_code=status.HTTP_200_OK, response_model=None, tags=["permissions"])
 async def create_permissions(
     service: RoleService,
     token: Annotated[str, Depends(get_token)],
@@ -135,7 +125,7 @@ async def create_permissions(
     await service.add_permissions()
 
 
-@router.get("/get-permissions", status_code=status.HTTP_200_OK, response_model=List[PermissionDTO])
+@router.get("/get-permissions", status_code=status.HTTP_200_OK, response_model=List[PermissionDTO], tags=["permissions"])
 async def get_permissions(
     service: RoleService,
     token: Annotated[str, Depends(get_token)],
@@ -145,7 +135,7 @@ async def get_permissions(
     return await service.get_permissions()
 
 
-@router.post("/set-permissions-to-role", status_code=status.HTTP_200_OK, response_model=None)
+@router.post("/set-permissions-to-role", status_code=status.HTTP_200_OK, response_model=None, tags=["permissions"])
 async def set_permissions_to_role(
     service: RoleService,
     token: Annotated[str, Depends(get_token)],
