@@ -1,15 +1,38 @@
 services:
-  # nginx-auth-app:
-  #   image: nginx:latest
-  #   restart: always
-  #   container_name: nginx-auth-app
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./configs:/etc/nginx/conf.d:ro
-  #   ports:
-  #     - "80:80"
-    # depends_on:
-    #   - admin-app
+  nginx-auth-service:
+    image: nginx:latest
+    restart: always
+    container_name: nginx-auth-service
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./configs:/etc/nginx/conf.d:ro
+    ports:
+      - "82:82"
+    depends_on:
+      - auth-service
+    networks:
+      middle-practicum:
+        ipv4_address: 172.18.0.10
+
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    pull_policy: always
+    container_name: auth-service
+    env_file:
+      - ./configs/.env
+    expose:
+      - "8080"
+    depends_on:
+      - postgres-auth
+      - redis-auth
+    networks:
+      middle-practicum:
+        ipv4_address: 172.18.0.11
+
 
   postgres-auth:
     image: postgres:16-alpine
@@ -17,21 +40,34 @@ services:
     container_name: postgres-auth
     env_file:
       - ./configs/.env
-    # volumes:
-      # - postgresql-data:/var/lib/postgresql/data
-      # - ./database_ddl.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
+    networks:
+      middle-practicum:
+        ipv4_address: 172.18.0.12
+
 
   redis-auth:
     image: redis:7.4.0-alpine
     container_name: redis-auth
     restart: always
-    ports:
-      - "10500:6379"
-    # volumes:
-      # - redis-auth:/data
+    expose:
+      - "6379"
+    networks:
+      middle-practicum:
+        ipv4_address: 172.18.0.13
+
 
 volumes:
   postgresql-data:
   redis-auth:
+
+networks:
+  middle-practicum:
+    external: True
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/24
+          gateway: 172.18.0.1

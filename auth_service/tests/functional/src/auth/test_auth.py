@@ -1,17 +1,8 @@
-import asyncio
-import pytest
 from http import HTTPStatus
 
-from settings import test_settings
-from testdata.data.film import film_collections, one_film
+import pytest
 from plugins import pytest_plugins
-
-"""
-все граничные случаи по валидации данных;
-поиск конкретного фильма;+
-вывести все фильмы;+
-поиск с учётом кеша в Redis.
-"""
+from settings import test_settings
 
 
 @pytest.mark.parametrize(
