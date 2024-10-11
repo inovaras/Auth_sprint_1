@@ -70,6 +70,20 @@ class AuthService:
 
         return access_token, refresh_token
 
+
+    async def register_admin(self, body: UserCredentialsDTO|UserCredentialsDTO_v2) -> User:
+        if await self.repository.find_by_login(body.login):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Нельзя создать пользователя с такими параметрами')
+
+        body.password = self.get_password_hash(body.password)
+
+        user = await self.repository.create(body.model_dump())
+        if isinstance(body, UserCredentialsDTO):
+            await self.repository.partial_update(pk=user.pk, data={'is_active': True})
+
+        return user
+
+
     # INFO ok
     async def register(self, body: UserCredentialsDTO|UserCredentialsDTO_v2) -> User:
         if await self.repository.find_by_login(body.login):

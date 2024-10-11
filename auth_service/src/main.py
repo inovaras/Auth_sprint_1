@@ -44,7 +44,7 @@ async def add_permissions_in_db(_: FastAPI, session: AsyncSession):
     return api_url_list
 
 
-async def create_basic_roles_and_users(session: AsyncSession):
+async def create_superuser_with_role(session: AsyncSession, login: str):
     jwt_auth = JWTAuth(config=JWTConfig())
     cache = await get_cache_storage()
     role_repository = RoleRepository(model=Role, session=session)
@@ -55,9 +55,41 @@ async def create_basic_roles_and_users(session: AsyncSession):
     )
 
     # create admin
-    admin_creds = UserCredentialsDTO(login=settings.ADMIN_LOGIN, password=settings.ADMIN_PASSWORD)
-    if not await auth_service.repository.find_by_login(admin_creds.login):
-        admin: User = await auth_service.register(admin_creds)
+    admin_creds = UserCredentialsDTO(login=login, password=settings.ADMIN_PASSWORD)
+    current_admin = await auth_service.repository.find_by_login(admin_creds.login)
+    print(f"Find {current_admin}")
+    if not current_admin:
+        current_admin: User = await auth_service.register_admin(admin_creds)
+        print(f"Created {current_admin.login}")
+
+    permissions = await role_service.repository.get_permissions()
+    if not permissions:
+        raise RuntimeError("Не созданы права доступа для ролей")
+
+    admin_permissions = [permission.allowed for permission in permissions]
+
+    role_name = {"name": "admin"}
+    admin_role = await role_service.repository.find_by_name(role_name['name'])
+    print(f"Find admin role {admin_role}")
+    if admin_role:
+        await role_service.set_role_for_user(pk=admin_role.pk, login=current_admin.login)
+    else:
+        admin_role = await role_service.repository.create(role_name)
+        await role_service.repository.set_permission_to_role(admin_role, admin_permissions)
+        await role_service.set_role_for_user(pk=admin_role.pk, login=role_name['name'])
+        admin = await auth_service.repository.find_by_login(login)
+        await auth_service.repository.partial_update(pk=admin.pk, data={"invalid_token": False})
+
+
+async def create_basic_role(session: AsyncSession):
+    jwt_auth = JWTAuth(config=JWTConfig())
+    cache = await get_cache_storage()
+    role_repository = RoleRepository(model=Role, session=session)
+    auth_repository = UserRepository(model=User, session=session)
+    role_service = RoleService(repository=role_repository, request=Request, response=Response)
+    auth_service = AuthService(
+        repository=auth_repository, request=Request, response=Response, jwt_auth=jwt_auth, cache=cache
+    )
 
     permissions = await role_service.repository.get_permissions()
     if not permissions:
@@ -70,20 +102,11 @@ async def create_basic_roles_and_users(session: AsyncSession):
                 correct_user_permissions.append(permission.allowed)
                 break
 
-    admin_permissions = [permission.allowed for permission in permissions]
-
     user_role_name = {"name": "user"}
-    admin_role_name = {"name": "admin"}
-    if not await role_service.repository.find_by_name(user_role_name['name']):
+    if not await role_service.repository.find_by_name("user"):
         user_role = await role_service.repository.create(user_role_name)
         await role_service.repository.set_permission_to_role(user_role, correct_user_permissions)
 
-    if not await role_service.repository.find_by_name(admin_role_name['name']):
-        admin_role = await role_service.repository.create(admin_role_name)
-        await role_service.repository.set_permission_to_role(admin_role, admin_permissions)
-        await role_service.set_role_for_user(pk=admin_role.pk, login=admin_role_name['name'])
-        admin = await auth_service.repository.find_by_login("admin")
-        await auth_service.repository.partial_update(pk=admin.pk, data={"invalid_token": False})
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -94,7 +117,8 @@ async def lifespan(app: FastAPI):
         # Добавляем права в базу данных
         await add_permissions_in_db(app, session)
         logger.info("permissions added successfully")
-        await create_basic_roles_and_users(session)
+        await create_superuser_with_role(session=session, login=settings.ADMIN_LOGIN)
+        await create_basic_role(session)
         logger.info("Created basic roles and users")
     yield
     await redis.redis.close()
