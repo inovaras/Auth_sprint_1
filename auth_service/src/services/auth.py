@@ -12,13 +12,19 @@ from auth_service.src.cache.cache import Cache, get_cache_storage
 from auth_service.src.core.config import settings
 from auth_service.src.database.models.role import Role
 from auth_service.src.database.models.user import User
+from auth_service.src.database.repository.role import RoleRepository
 from auth_service.src.database.repository.user import (
     UserRepository,
     get_user_repository,
 )
 from auth_service.src.dto.auth import TokensDTO
-from auth_service.src.dto.user import UserCredentialsDTO, UserCredentialsDTO_v2, UserUpdateDTO
+from auth_service.src.dto.user import (
+    UserCredentialsDTO,
+    UserCredentialsDTO_v2,
+    UserUpdateDTO,
+)
 from auth_service.src.security.JWTAuth import JWTAuth, JWTError, get_jwt_auth, get_token
+from auth_service.src.services.role import RoleService
 
 # to get a string like this run:
 # openssl rand -hex 32
@@ -74,6 +80,14 @@ class AuthService:
         user = await self.repository.create(body.model_dump())
         if isinstance(body, UserCredentialsDTO):
             await self.repository.partial_update(pk=user.pk, data={'is_active': True})
+
+        session = self.repository.session
+        async with session as current_session:
+            role_repository = RoleRepository(model=Role, session=current_session)
+            role_service = RoleService(repository=role_repository, request=self.request, response=self.response)
+
+            role = await role_service.repository.find_by_name("user")
+            await role_service.set_role_for_user(role.pk, login=user.login)
 
         return user
 

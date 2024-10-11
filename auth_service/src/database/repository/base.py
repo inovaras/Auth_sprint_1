@@ -38,6 +38,9 @@ class DatabaseRepository(Generic[Model]):
 
             query = update(self.model).where(self.model.pk == pk).values(**dict_without_none)
             await self.session.execute(query)
+            self.session.add(entity)
+            await self.session.commit()
+            await self.session.refresh(entity)
         return entity
 
     # INFO не понимаю expressions
