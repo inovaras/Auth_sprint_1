@@ -52,10 +52,10 @@ async def create_superuser_with_role(session: AsyncSession, login: str):
         await role_service.set_role_for_user(pk=admin_role.pk, login=current_admin.login)
     else:
         admin_role = await role_service.repository.create(role_name)
-        await role_service.repository.set_permission_to_role(admin_role, admin_permissions)
-        await role_service.set_role_for_user(pk=admin_role.pk, login=role_name['name'])
-        admin = await auth_service.repository.find_by_login(login)
-        await auth_service.repository.partial_update(pk=admin.pk, data={"invalid_token": False})
+    await role_service.repository.set_permission_to_role(admin_role, admin_permissions)
+    await role_service.set_role_for_user(pk=admin_role.pk, login=role_name['name'])
+    admin = await auth_service.repository.find_by_login(login)
+    await auth_service.repository.partial_update(pk=admin.pk, data={"invalid_token": False})
 
 
 async def create_superuser(login: str):
