@@ -23,6 +23,14 @@ async def get_token(request: Request):
     return token
 
 
+async def get_refresh_token(request: Request):
+    token = request.cookies.get('user_refresh_token')
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token not found')
+
+    return token
+
+
 @dataclass
 class JWTConfig:
     secret: str = settings.JWT_SECRET_KEY
@@ -34,6 +42,7 @@ class JWTConfig:
 class TokenType(str, Enum):
     ACCESS = 'ACCESS'
     REFRESH = 'REFRESH'
+
 
 # https://habr.com/ru/companies/doubletapp/articles/764424/
 # https://github.com/doubletapp/habr-jwt-auth-example/blob/main/src/app/pkg/auth/middlewares/jwt/base/auth.py#L50

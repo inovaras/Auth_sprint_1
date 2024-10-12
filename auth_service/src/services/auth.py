@@ -38,12 +38,7 @@ class AuthService:
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
     def __init__(
-        self,
-        repository: UserRepository,
-        jwt_auth: JWTAuth,
-        request: Request,
-        response: Response,
-        cache: Cache
+        self, repository: UserRepository, jwt_auth: JWTAuth, request: Request, response: Response, cache: Cache
     ) -> None:
         self.repository = repository
         self._jwt_auth = jwt_auth
@@ -65,15 +60,18 @@ class AuthService:
         access_token = self._jwt_auth.generate_access_token(
             subject=str(user.login), payload={'device_id': device_id, "permissions": permissions}
         )
-        refresh_token = self._jwt_auth.generate_refresh_token(subject=str(user.login), payload={'device_id': device_id})
+        refresh_token = self._jwt_auth.generate_refresh_token(
+            subject=str(user.login), payload={'device_id': device_id, "permissions": permissions}
+        )
         await self.repository.set_or_update_refresh_token(user, refresh_token)
 
         return access_token, refresh_token
 
-
-    async def register_admin(self, body: UserCredentialsDTO|UserCredentialsDTO_v2) -> User:
+    async def register_admin(self, body: UserCredentialsDTO | UserCredentialsDTO_v2) -> User:
         if await self.repository.find_by_login(body.login):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Нельзя создать пользователя с такими параметрами')
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail='Нельзя создать пользователя с такими параметрами'
+            )
 
         body.password = self.get_password_hash(body.password)
 
@@ -83,11 +81,12 @@ class AuthService:
 
         return user
 
-
     # INFO ok
-    async def register(self, body: UserCredentialsDTO|UserCredentialsDTO_v2) -> User:
+    async def register(self, body: UserCredentialsDTO | UserCredentialsDTO_v2) -> User:
         if await self.repository.find_by_login(body.login):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Нельзя создать пользователя с такими параметрами')
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail='Нельзя создать пользователя с такими параметрами'
+            )
 
         body.password = self.get_password_hash(body.password)
 
@@ -128,7 +127,11 @@ class AuthService:
         # TODO remove refresh_token to postgres ??
         self.response.delete_cookie(key="user_access_token", httponly=True)
         self.response.delete_cookie(key="user_refresh_token", httponly=True)
-        await self.cache.set_cache(key=self.request.cookies['user_access_token'] , value=self.request.cookies['user_access_token'], expire=settings.ACCESS_TOKEN_EXPIRE_MINUTES.seconds )
+        await self.cache.set_cache(
+            key=self.request.cookies['user_access_token'],
+            value=self.request.cookies['user_access_token'],
+            expire=settings.ACCESS_TOKEN_EXPIRE_MINUTES.seconds,
+        )
 
         return {'message': 'Пользователь успешно вышел из системы'}
 
@@ -143,6 +146,7 @@ class AuthService:
         self.response.set_cookie(key="user_access_token", value=access_token, httponly=True)
         self.response.set_cookie(key="user_refresh_token", value=refresh_token, httponly=True)
         await self.repository.partial_update(pk=user.pk, data={"invalid_token": False})
+        self.actual_refresh_token = refresh_token
 
     # FIXME rename здесь не только декодирование токена, но и проверка на наличие необходимых атрибутов.
     async def decode_token(self, token: str):
@@ -170,6 +174,27 @@ class AuthService:
             return True
 
         return False
+
+    async def update_tokens_pair(self, user: User):
+        # check refresh_token in db
+        actual_refresh_token = self.actual_refresh_token
+        msg = 'Refresh token отсутствует'
+        if not actual_refresh_token:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=msg)
+        has_refresh_token = await self.repository.find_refresh_token(user)
+        if not has_refresh_token:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=msg)
+
+        if not has_refresh_token.refresh_token == actual_refresh_token:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ за")
+
+        # генерируем новый refresh_token для повышения безопасности (это называется "refresh token rotation").
+        access_token, refresh_token = await self._issue_tokens_for_user(user=user, permissions=[])
+        self.response.set_cookie(key="user_access_token", value=access_token, httponly=True)
+        self.response.set_cookie(key="user_refresh_token", value=refresh_token, httponly=True)
+        # await self.repository.add_to_history(user, self.request.headers['user-agent'])
+
+        return TokensDTO(access_token=access_token, refresh_token=refresh_token, token_type='bearer')
 
     async def get_current_user_if_has_permissions(self, token: Annotated[str, Depends(get_token)]):
         has_token = await self.cache.get_cache(key=token)
@@ -222,12 +247,6 @@ def get_auth_service(
     jwt_auth: Annotated[JWTAuth, Depends(get_jwt_auth)],
     request: Request,
     response: Response,
-    cache: Cache = Depends(get_cache_storage)
+    cache: Cache = Depends(get_cache_storage),
 ) -> AuthService:
-    return AuthService(
-        repository=repository,
-        jwt_auth=jwt_auth,
-        request=request,
-        response=response,
-        cache=cache
-    )
+    return AuthService(repository=repository, jwt_auth=jwt_auth, request=request, response=response, cache=cache)

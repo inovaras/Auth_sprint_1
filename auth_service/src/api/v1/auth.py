@@ -6,11 +6,22 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from auth_service.src.dto.auth import TokensDTO
 from auth_service.src.dto.user import UserCredentialsDTO
+from auth_service.src.security.JWTAuth import get_refresh_token
 from auth_service.src.services.auth import AuthService, get_auth_service, get_token
 
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+@router.get("/refresh/", status_code=status.HTTP_200_OK)
+async def refresh(
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+    token: Annotated[str, Depends(get_refresh_token)],
+):
+    user = await auth_service.get_current_user_if_has_permissions(token)
+    tokens = await auth_service.update_tokens_pair(user)
+    return tokens
 
 
 @router.get("/me/", status_code=status.HTTP_200_OK)

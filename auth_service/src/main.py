@@ -94,7 +94,13 @@ async def create_basic_role(session: AsyncSession):
     permissions = await role_service.repository.get_permissions()
     if not permissions:
         raise RuntimeError("Не созданы права доступа для ролей")
-    user_permissions = ["/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/logout", "/api/v1/auth/me/"]
+    user_permissions = [
+        "/api/v1/auth/refresh/",
+        "/api/v1/auth/register",
+        "/api/v1/auth/login",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/me/",
+    ]
     correct_user_permissions = []
     for permission in permissions:
         for user_permission in user_permissions:
@@ -103,9 +109,10 @@ async def create_basic_role(session: AsyncSession):
                 break
 
     user_role_name = {"name": "user"}
-    if not await role_service.repository.find_by_name("user"):
+    user_role = await role_service.repository.find_by_name(user_role_name["name"])
+    if not user_role:
         user_role = await role_service.repository.create(user_role_name)
-        await role_service.repository.set_permission_to_role(user_role, correct_user_permissions)
+    await role_service.repository.set_permission_to_role(user_role, correct_user_permissions)
 
 
 @asynccontextmanager
